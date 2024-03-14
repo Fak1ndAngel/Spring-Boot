@@ -1,41 +1,37 @@
-import java.util.Optional;
+package com.example;
 
-
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api/users")
-public class UserController {
+public class AuthController {
 	
-	@Autowired
-	private UserService userService;
+	private final UsuarioRepository usuarioRepository;
 	
-	@GetMapping("/{username}")
-	public ResponseEntity<User> getUserByUsername(@PathVariable String username) {
-		Optional<User> user= userService.findByUsername(username);
-		
-			return user.map(ResponseEntity::ok)
-					.orElse(ResponseEntity.notFound().build());
+	public AuthController(UsuarioRepository usuarioRepository) {
+		this.usuarioRepository = usuarioRepository;
 	}
 
-	
-	@PostMapping("/create")
-	public ResponseEntity<User> createUser(@RequestBody User user){
-		User savedUser = userService.saveUser(user);
-		return ResponseEntity.ok(savedUser);
-	}
-	
-	 @DeleteMapping("/{id}")
-	    public ResponseEntity<Void> deleteUser(@PathVariable Long id) {
-	        userService.deleteUser(id);
-	        return ResponseEntity.noContent().build();
-	    }
+@PostMapping("/crear-usuario")
+public ResponseEntity<?> crearUsuario(@RequestBody Usuario usuario){
+	Usuario nuevoUsuario = usuarioRepository.save(usuario);
+	return ResponseEntity.status(HttpStatus.CREATED).body(nuevoUsuario);
 }
+
+@PostMapping("/login")
+public ResponseEntity<?> login(@RequestBody Usuario usuario) {
+    System.out.println("Usuario recibido: " + usuario.getUsername() + " - " + usuario.getPassword());
+    Usuario usuarioEncontrado = usuarioRepository.findByUsername(usuario.getUsername());
+    if (usuarioEncontrado != null && usuarioEncontrado.getPassword().equals(usuario.getPassword())) {
+        System.out.println("Login exitoso para: " + usuario.getUsername());
+        return ResponseEntity.ok().body(usuarioEncontrado);
+    } else {
+        System.out.println("Credenciales inválidas para: " + usuario.getUsername());
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(null);
+    }
+}
+}
+
